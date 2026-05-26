@@ -1,4 +1,10 @@
 import streamlit as st
+import warnings
+import os
+import base64 as _b64
+import io as _io
+warnings.filterwarnings("ignore")
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,17 +12,26 @@ import matplotlib.patches as mpatches
 import seaborn as sns
 import plotly.express as px
 import plotly.graph_objects as go
-import holidays
 from datetime import time
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from stepmix.stepmix import StepMix
-import warnings
-import os
-import base64 as _b64
-import io as _io
 from sklearn.metrics import silhouette_score
-from stepmix.utils import get_mixed_descriptor
+
+try:
+    import holidays
+    _HOLIDAYS_OK = True
+except Exception:
+    holidays = None
+    _HOLIDAYS_OK = False
+
+try:
+    from stepmix.stepmix import StepMix
+    from stepmix.utils import get_mixed_descriptor
+    _STEPMIX_OK = True
+except Exception as _e:
+    StepMix = None
+    get_mixed_descriptor = None
+    _STEPMIX_OK = False
  
 
 _LOGO_TMP = "logo.png"
@@ -27,7 +42,6 @@ st.set_page_config(
     page_icon="☕",
     layout="wide"
 )
-warnings.filterwarnings("ignore")
 
 # ── PALETA CORPORATIVA STARBUCKS ──────────────────────────────────────────────
 SBX_GREEN      = "#00704A"
@@ -154,9 +168,9 @@ def load_data(file_path):
         if time(12, 0) <= t < time(19, 0): return "Tarde"
         return "Noche"
 
-    us_holidays = holidays.US()
+    _hols = holidays.US() if _HOLIDAYS_OK else set()
     def clasificar_dia(fecha):
-        if fecha.date() in us_holidays: return "Feriado"
+        if _hols and fecha.date() in _hols: return "Feriado"
         if fecha.weekday() >= 5: return "Fin de Semana"
         return "Día Laboral"
 
@@ -384,9 +398,7 @@ def style_matplotlib():
         "axes.spines.right": False,
         "axes.titlesize":    13,
         "axes.titleweight":  "bold",
-        "axes.titlecolor":   "#1e3932",
-        "axes.labelcolor":   "#1e3932",
-        "axes.labelsize":    11,
+                        "axes.labelsize":    11,
         "xtick.color":       "#1e3932",
         "ytick.color":       "#1e3932",
         "font.family":       "sans-serif",
